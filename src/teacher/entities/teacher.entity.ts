@@ -25,4 +25,7 @@ export class Teacher {
 
     @Column({ type: "boolean", default: true })
     is_active: boolean;
+
+    @Column({ nullable: true })
+    hashed_refresh_token: string;
 }

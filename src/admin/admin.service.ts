@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { CreateAdminDto } from './dto/create-admin.dto';
-import { UpdateAdminDto } from './dto/update-admin.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Admin } from './entities/admin.entity';
+import { Injectable } from "@nestjs/common";
+import { CreateAdminDto } from "./dto/create-admin.dto";
+import { UpdateAdminDto } from "./dto/update-admin.dto";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Admin } from "./entities/admin.entity";
 
 @Injectable()
 export class AdminService {
   constructor(
-    @InjectRepository(Admin) private adminRepository: Repository<Admin>,
+    @InjectRepository(Admin) private adminRepository: Repository<Admin>
   ) {}
 
   async create(createAdminDto: CreateAdminDto) {
@@ -18,6 +18,10 @@ export class AdminService {
 
   findAll() {
     return this.adminRepository.find();
+  }
+
+  async updateRefreshToken(adminId: number, hashed_refresh_token: string) {
+    await this.adminRepository.update(adminId, { hashed_refresh_token });
   }
 
   findOne(id: number) {

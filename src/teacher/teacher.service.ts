@@ -31,4 +31,12 @@ export class TeacherService {
   remove(id: number) {
     return this.teacherRepository.delete(id);
   }
+
+  async updateRefreshToken(teacherId: number, hashed_refresh_token: string) {
+    await this.teacherRepository.update(teacherId, { hashed_refresh_token });
+  }
+
+  findByEmail(email: string) {
+    return this.teacherRepository.findOne({ where: { email } });
+  }
 }
