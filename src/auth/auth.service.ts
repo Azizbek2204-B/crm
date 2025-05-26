@@ -10,13 +10,15 @@ import ms = require("ms");
 import { TeacherService } from "../teacher/teacher.service";
 import { AdminService } from "../admin/admin.service";
 import { Request, Response } from "express";
+import { StudentService } from "../student/student.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
     private adminService: AdminService,
-    private readonly teacherService: TeacherService
+    private readonly teacherService: TeacherService,
+    private readonly studentService: StudentService,
   ) {}
 
   async generateTokens(user: any) {
@@ -228,6 +230,106 @@ export class AuthService {
     const tokens = await this.generateTokens(teacher);
     const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
     await this.teacherService.updateRefreshToken(teacher.id, hashed_refresh_token);
+
+    res.cookie("refresh_token", tokens.refresh_token, {
+      maxAge: Number(process.env.COOKIE_TIME),
+      httpOnly: true,
+    });
+
+    return {
+      message: "Token yangilandi",
+      accessToken: tokens.access_token,
+    };
+  }
+
+  async loginStudent(loginDto: LoginDto, res: Response) {
+    const student = await this.studentService.findByEmail(loginDto.email);
+    if (!student) {
+      throw new UnauthorizedException("Parol yoki email xato");
+    }
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      student.hashed_password
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Parol yoki email xato");
+    }
+    const tokens = await this.generateTokens(student);
+    res.cookie("refresh_token", tokens.refresh_token, {
+      maxAge: ms(process.env.REFRESH_TOKEN_TIME),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
+    student.hashed_refresh_token = hashed_refresh_token;
+    await this.studentService.updateRefreshToken(student.id, hashed_refresh_token);
+    return {
+      message: "Xush kelibsiz",
+      studentId: student.id,
+      access_token: tokens.access_token,
+    };
+  }
+
+  async logoutStudent(req: Request, res: Response) {
+    const refresh_token = req.cookies.refresh_token;
+    if (!refresh_token) {
+      throw new BadRequestException("Refresh token topilmadi");
+    }
+
+    let studentId: number;
+    try {
+      const payload = await this.jwtService.verifyAsync(refresh_token, {
+        secret: process.env.REFRESH_TOKEN_KEY,
+      });
+      studentId = payload.id;
+    } catch (error) {
+      throw new UnauthorizedException("Token noto‘g‘ri yoki muddati tugagan");
+    }
+
+    const student = await this.studentService.findOne(studentId);
+    if (!student) {
+      throw new UnauthorizedException("Foydalanuvchi topilmadi");
+    }
+    const hashed_refresh_token = "";
+    await this.studentService.updateRefreshToken(student.id, hashed_refresh_token);
+    res.clearCookie("refresh_token");
+    return { message: "Logout success" };
+  }
+
+  async refreshTokenStudent(req: Request, res: Response) {
+    const refresh_token = req.cookies["refresh_token"];
+    if (!refresh_token) {
+      throw new BadRequestException("Refresh token topilmadi");
+    }
+    let payload: any;
+    try {
+      payload = await this.jwtService.verifyAsync(refresh_token, {
+        secret: process.env.REFRESH_TOKEN_KEY,
+      });
+    } catch (error) {
+      throw new UnauthorizedException("Token noto‘g‘ri yoki muddati tugagan");
+    }
+
+    const student = await this.studentService.findOne(payload.id);
+
+    if (!student || !student.hashed_refresh_token) {
+      throw new UnauthorizedException(
+        "Foydalanuvchi topilmadi yoki token yo‘q"
+      );
+    }
+
+    const isMatch = await bcrypt.compare(
+      refresh_token,
+      student.hashed_refresh_token
+    );
+    if (!isMatch) {
+      throw new UnauthorizedException("Token mos emas");
+    }
+
+    const tokens = await this.generateTokens(student);
+    const hashed_refresh_token = await bcrypt.hash(tokens.refresh_token, 7);
+    await this.studentService.updateRefreshToken(student.id, hashed_refresh_token);
 
     res.cookie("refresh_token", tokens.refresh_token, {
       maxAge: Number(process.env.COOKIE_TIME),

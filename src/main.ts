@@ -1,11 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ConfigService } from '@nestjs/config';
 
-async function bootstrap() {
+async function start() {
   const app = await NestFactory.create(AppModule);
+  const config = app.get(ConfigService);
+  const PORT = process.env.PORT || 3001;
   app.setGlobalPrefix(`api`)
-  await app.listen(process.env.PORT ?? 3000, ()=>{
-    console.log(`Server 3000-portda ishga tushdi...`);
+  await app.listen(PORT, ()=>{
+    console.log(`Server ${PORT}-portda ishga tushdi...`);
   });
 }
-bootstrap();
+start();
