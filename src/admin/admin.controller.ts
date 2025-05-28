@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { AdminService } from './admin.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import * as bcrypt from 'bcrypt';
 
 @Controller('admin')
 export class AdminController {
@@ -10,8 +9,6 @@ export class AdminController {
 
   @Post()
   create(@Body() createAdminDto: CreateAdminDto) {
-    const hashed_password = bcrypt.hashSync(createAdminDto.hashed_password, 7);
-    createAdminDto.hashed_password = hashed_password;
     return this.adminService.create(createAdminDto);
   }
 

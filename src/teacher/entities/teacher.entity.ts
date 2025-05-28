@@ -1,35 +1,61 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from "typeorm";
-import { TeacherGroup } from "../../teacher_groups/entities/teacher_group.entity";
+import { Field, ID, ObjectType } from "@nestjs/graphql";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { TeacherGroup } from "../../teacher-groups/entities/teacher-group.entity";
+import { Homework } from "../../homework/entities/homework.entity";
+import { Grade } from "../../grades/entities/grade.entity";
 
+@ObjectType()
 @Entity()
 export class Teacher {
+  @Field(() => ID)
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Field()
   @Column()
-  first_name: string;
+  firstName: string;
 
+  @Field()
   @Column()
-  last_name: string;
+  lastName: string;
 
-  @Column({ unique: true })
+  @Field()
+  @Column()
   email: string;
 
-  @Column()
-  hashed_password: string;
-
+  @Field()
   @Column()
   phone: string;
 
-  @Column({ enum: ["teacher", "director"], type: "enum", default: "teacher" })
+  @Field()
+  @Column()
+  subject: string;
+
+  @Field()
+  @Column()
+  password: string;
+
+  @Field()
+  @Column({ enum: ["teacher", "assistant"] })
   role: string;
 
-  @Column({ type: "boolean", default: true })
+  @Field()
+  @Column({ default: false })
   is_active: boolean;
 
-  @Column({ nullable: true })
-  hashed_refresh_token: string;
+  @Field()
+  @Column({ default: "" })
+  refresh_token: string;
 
-  @OneToMany(() => TeacherGroup, (tg) => tg.teacherId)
-  teacherGroups: TeacherGroup[];
+  @OneToMany(()=>TeacherGroup,(teachergroup)=>teachergroup.teacher)
+  teachergroup: TeacherGroup[]
+
+
+  @OneToMany(()=>Homework,(homework)=>homework.teacher)
+  homework:Homework[]
+
+
+  @OneToMany(()=>Grade,(grade)=>grade.teacher)
+  grade:Grade[]
+
 }
